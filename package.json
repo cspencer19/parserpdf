@@ -23,7 +23,7 @@
   },
   "homepage": "https://gitlab.com/fourzerofour/pdf-parser-nodejs#readme",
   "dependencies": {
+    "exceljs": "^4.4.0",
     "pdfreader": "^1.2.14"
-  },
-  "devDependencies": {}
+  }
 }

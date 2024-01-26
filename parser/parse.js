@@ -34,17 +34,131 @@ async function mapToCSV(parsedData){
     jsonData.push(value);
 
   }
-  //console.log(jsonData);
+ // console.log(jsonData)
  const JobNumber =await obtainJobNumber(jsonData);
  const Company = await obtainCompanyName(jsonData);
  const TypeSize = await obtainTypeSize(jsonData);
+ const OrderRows = await returncleanedRows(jsonData);
 
- console.log(TypeSize);
+    OrderRows.forEach(function(data, index){
 
- TypeSize.forEach(function(ts){
-  console.log(ts.type);
- })
-// console.log(TypeSize); 
+      //console.log(data, index)
+    
+
+    })
+
+    var fs = require('fs');
+  var Excel = require('exceljs');
+const workbook = new Excel.Workbook();
+
+
+
+var path = require('path');
+var fpath = path.join(__dirname, './NestingUploadTemplate.xlsx');
+
+await workbook.xlsx.readFile(fpath).then(function() {
+      console.log('got here');
+        var worksheet = workbook.getWorksheet(1);
+        var row = worksheet.getRow(1);
+        row.getCell(1).value = 'Job # '+JobNumber;
+        row.getCell(2).value = 'Company '+Company;
+       // worksheet.commit();
+
+        var rowName = 'row';
+        var nameType = ''; 
+        var type = '';
+        var count = 0;
+       OrderRows.forEach((element, index, array) => {
+        let rowVar = worksheet.getRow(index+2);
+        nameType = element[0].name; // 100, 200, 300
+        console.log(nameType)
+       
+
+
+      if (nameType == 'Type')
+        type = element[0].val;
+  
+        let combinedName = ''
+      if(element[1].name == 'Size'){
+        
+        combinedName = type + ' ' +element[1].val
+        rowVar.getCell(1).value = combinedName;
+
+
+      }
+      if(nameType == 'Quan'){
+        let rows =[];
+        for(let i = 0; i < element.length; i++){
+          if(element[i].name === 'Quan'){
+            rows[7] = element[i].val
+          }
+
+          if(element[i].name === 'Item'){
+            rows[2] = element[i].val
+          }
+          if(element[i].name === 'Mark'){
+            rows[3] = element[i].val
+          }
+
+          if(element[i].name === 'Length'){
+             let x = element[i].val;
+             let inch = '';
+             
+             //x = x.replace(/\\`/g,"");
+             console.log(x);
+             let feet = x.split("' ");
+             console.log(feet[0]);
+             console.log(feet[1]);
+             if(feet[1]){
+             inch = feet[1].split('-');
+             if(inch[1]){
+            inch[1] = inch[1].replace(/"/g, '');
+       
+              }
+             } 
+
+             rows[9] = feet[0];
+             rows[10] = inch[0];
+             rows[11] = inch[1];
+
+
+          }
+            worksheet.insertRow(index, rows)
+        }
+         
+        }
+     
+
+      
+      
+
+        //rowVar.commit();
+      })
+
+     /*   for(let i = 1; i < OrderRows.length; i++){
+          console.log(OrderRows[0])
+            let rowName = OrderRows[i][0].name;
+            if(rowName == 'Type'){
+              console.log(OrderRows[i+1][0].val)
+              var rowValues = [];
+              //rowValues[1] = OrderRows[i][0].val;
+              //worksheet.insertRow(i, {})
+            }
+          console.log(OrderRows[i][0].name);
+          //row.getCell()
+*/
+
+
+    //    }
+
+        return workbook.xlsx.writeFile('new2.xlsx');
+        }).catch(error => {
+          console.error('Algo salio mal', error);
+          });
+
+console.log('here');
+
+
 }
 
 async function obtainJobNumber(jsonData){
@@ -80,27 +194,40 @@ async function obtainTypeSize(jsonData){
   jsonData.forEach(function(data, index){
 
     for(let x in data){
-      //var type = '';
-      var idx = '';
-      var size = '';
       var type;
       if(data[x].x == 4.37){
         type = data[x].val;
-        //b = {'type': data[x].val, 'typeidx': index - 1;
-        //retArr.push({'type': data[x].val, 'typeidx': index - 1})
       }
       
-  
       if(data[x].x === 6.852){
-        console.log('got in here');
         retArr.push({'type': type, 'size': data[x].val, 'sizeidx': index - 1})
-      } 
-      
+      }
+
     }
-    
   })
 
 return retArr;
+}
+
+async function returncleanedRows(jsonData){
+
+ let retJson = [];
+  jsonData.forEach(function(data,index){
+ //console.log(data);
+// console.log(index);
+
+ if(data[0].name == 'TotalLength' || Object.values(data)[0].name == 'Length' || (data[0].name == 'Mark' && data[0].val == 'Mark')){
+
+
+ } else{
+  retJson.push(data);
+ }
+
+
+ })
+
+return retJson;
+
 }
 
 
