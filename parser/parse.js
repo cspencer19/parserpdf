@@ -38,7 +38,13 @@ async function mapToCSV(parsedData){
  const JobNumber =await obtainJobNumber(jsonData);
  const Company = await obtainCompanyName(jsonData);
  const TypeSize = await obtainTypeSize(jsonData);
+
  console.log(TypeSize);
+
+ TypeSize.forEach(function(ts){
+  console.log(ts.type);
+ })
+// console.log(TypeSize); 
 }
 
 async function obtainJobNumber(jsonData){
@@ -74,14 +80,20 @@ async function obtainTypeSize(jsonData){
   jsonData.forEach(function(data, index){
 
     for(let x in data){
+      //var type = '';
+      var idx = '';
+      var size = '';
+      var type;
       if(data[x].x == 4.37){
-        retArr.push({'type': data[x].val, 'typeidx': index - 1})
+        type = data[x].val;
+        //b = {'type': data[x].val, 'typeidx': index - 1;
+        //retArr.push({'type': data[x].val, 'typeidx': index - 1})
       }
       
   
       if(data[x].x === 6.852){
         console.log('got in here');
-        retArr.push({'size': data[x].val, 'sizeidx': index - 1})
+        retArr.push({'type': type, 'size': data[x].val, 'sizeidx': index - 1})
       } 
       
     }
