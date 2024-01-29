@@ -28,6 +28,7 @@ function readPDFPages (buffer, reader=(new PdfReader())) {
 
 async function mapToCSV(parsedData){
  let jsonData = [];
+ const jmath = require('mathjs');
 
 //console.log(parsedData);
   for (let value of Object.values(parsedData)) {
@@ -54,10 +55,9 @@ const workbook = new Excel.Workbook();
 
 
 var path = require('path');
-var fpath = path.join(__dirname, './NestingUploadTemplate.xlsx');
-
+var fpath = path.join(__dirname, './NestingUploadTemplateTrial.xlsx');
+console.log(fpath);
 await workbook.xlsx.readFile(fpath).then(function() {
-      console.log('got here');
         var worksheet = workbook.getWorksheet(1);
         var row = worksheet.getRow(1);
         row.getCell(1).value = 'Job # '+JobNumber;
@@ -66,97 +66,97 @@ await workbook.xlsx.readFile(fpath).then(function() {
 
         var rowName = 'row';
         var nameType = ''; 
+        var nameVal = '';
         var type = '';
         var count = 0;
+        var sumTotal = 0;
        OrderRows.forEach((element, index, array) => {
-        let rowVar = worksheet.getRow(index+2);
+        let rowIndex = index+1;
+
         nameType = element[0].name; // 100, 200, 300
-        console.log(nameType)
-       
+        nameVal = element[0].val;
 
-
-      if (nameType == 'Type')
+      if (nameType == 'Type'){
+        let rows = [];
         type = element[0].val;
   
         let combinedName = ''
       if(element[1].name == 'Size'){
         
         combinedName = type + ' ' +element[1].val
-        rowVar.getCell(1).value = combinedName;
-
+        rows[1] = combinedName
+       worksheet.insertRow(rowIndex, rows);
 
       }
-      if(nameType == 'Quan'){
+    }
+     else if(nameType == 'Quan'){
         let rows =[];
-        for(let i = 0; i < element.length; i++){
-          if(element[i].name === 'Quan'){
-            rows[7] = element[i].val
+          if(element[0].name === 'Quan'){
+            rows[7] = element[0].val
           }
 
-          if(element[i].name === 'Item'){
-            rows[2] = element[i].val
+          if(element[1].name === 'Item'){
+            rows[2] = element[1].val
           }
-          if(element[i].name === 'Mark'){
-            rows[3] = element[i].val
+          if(element[2].name === 'Mark'){
+            rows[3] = element[2].val
           }
 
-          if(element[i].name === 'Length'){
-             let x = element[i].val;
+          if(element[3].name === 'Length'){
+             let x = element[3].val;
              let inch = '';
              
-             //x = x.replace(/\\`/g,"");
-             console.log(x);
-             let feet = x.split("' ");
-             console.log(feet[0]);
-             console.log(feet[1]);
+             x = x.replace(/\\`/g,"");
+             let feet = x.split("'");
              if(feet[1]){
              inch = feet[1].split('-');
+             }
+             
+             inch[0] = inch[0].replace(/"/g, '');
              if(inch[1]){
             inch[1] = inch[1].replace(/"/g, '');
        
-              }
-             } 
+            }
+             
 
              rows[9] = feet[0];
              rows[10] = inch[0];
              rows[11] = inch[1];
+              let i = 0;
+              let j = 0;
+              let h = 0;
+              if(feet[0]){
+                j = feet[0];
+              }
+              h = inch[0];
+               h = h/12;
+              
+             if(inch[1]){
+               i = eval(inch[1]);
+               i = eval(i/12);
+             }
 
+             let sum = jmath.sum(j,h,i);
+             let rounded_sum = round(sum, 3)
+             sumTotal += rounded_sum;
 
-          }
-            worksheet.insertRow(index, rows)
+             rows[12] = {formula: 'ROUND(SUM(J'+rowIndex+'/12,K'+rowIndex+'/12, I'+rowIndex+'),3)', result: rounded_sum};
+             rows[6] = {formula: '=L'+rowIndex, result: rounded_sum};
+             rows[14] = {formula: 'SUM(L'+rowIndex+' * G'+rowIndex+')', result : element[0].val * rounded_sum }
+
         }
-         
+        worksheet.insertRow(rowIndex, rows)
         }
      
-
-      
-      
-
-        //rowVar.commit();
       })
 
-     /*   for(let i = 1; i < OrderRows.length; i++){
-          console.log(OrderRows[0])
-            let rowName = OrderRows[i][0].name;
-            if(rowName == 'Type'){
-              console.log(OrderRows[i+1][0].val)
-              var rowValues = [];
-              //rowValues[1] = OrderRows[i][0].val;
-              //worksheet.insertRow(i, {})
-            }
-          console.log(OrderRows[i][0].name);
-          //row.getCell()
-*/
-
-
-    //    }
-
+            sumTotal = round(sumTotal, 3);
+            worksheet.getCell('P2').value = sumTotal;
         return workbook.xlsx.writeFile('new2.xlsx');
         }).catch(error => {
           console.error('Algo salio mal', error);
           });
 
-console.log('here');
 
 
 }
@@ -188,9 +188,7 @@ return companyName;
 
 async function obtainTypeSize(jsonData){
   let retArr = [];
-  let type = '';
-  let size = '';
-  let inx = {};
+
   jsonData.forEach(function(data, index){
 
     for(let x in data){
@@ -213,16 +211,11 @@ async function returncleanedRows(jsonData){
 
  let retJson = [];
   jsonData.forEach(function(data,index){
- //console.log(data);
-// console.log(index);
 
- if(data[0].name == 'TotalLength' || Object.values(data)[0].name == 'Length' || (data[0].name == 'Mark' && data[0].val == 'Mark')){
-
-
- } else{
-  retJson.push(data);
- }
-
+  if(data[0].name == 'TotalLength' || Object.values(data)[0].name == 'Length' || (data[0].name == 'Mark' && data[0].val == 'Mark')){
+  } else { 
+    retJson.push(data);
+  }
 
  })
 
@@ -230,7 +223,10 @@ return retJson;
 
 }
 
-
+function round (number, decimal_places){
+    const h = +('1'.padEnd(decimal_places + 1, '0')) // 10 or 100 or 1000 or etc
+    return Math.round(number * h) / h
+  }
 
 
 async function parsePDFData (pages) {
@@ -262,7 +258,6 @@ let pageArr = [];
   // Assign the page data to an object we can return, as per
   // our field specification
   pageArr[0].forEach(function(page){ 
-   // console.log(page);
     Object.keys(fields)
       .forEach((key) => {
         const field = fields[key];
@@ -296,7 +291,6 @@ let pageArr = [];
 module.exports = async function parse (buf, reader) {
 
   const data = await readPDFPages(buf, reader);
-  //console.log({'beforeParse': data});
   const parsedData = await parsePDFData(data); 
   
   const mapTo = await mapToCSV(parsedData);
