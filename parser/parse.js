@@ -18,10 +18,13 @@ function readPDFPages (buffer, reader=(new PdfReader())) {
         pages.push({}); 
 
       else if (item.text) {
+      //  console.log(item.text);
        pageArr.push({'x' : item.x, 'y' : item.y, 'val': item.text});
         pages[pages.length - 1][item.y] = pageArr;
+       // console.log(pageArr);
       }
     });
+  
   });
 
 }
@@ -287,10 +290,43 @@ let pageArr = [];
 
 }
 
+async function identifyPage(data){
+  let pageCall = '';
+  let pageArr = [];
+  let finalArr = [];
+  data.forEach(function callback(value, index) {
+    
+    Object.keys(value).forEach(key => {
+      pageArr.push(value[key]);
+    }); 
+  });
 
+
+  pageArr[0].forEach(function(page){ 
+   // console.log(page.x);
+    finalArr.push({'x': page.x, 'y': page.y, 'val': page.val});
+  
+})
+
+    finalArr.forEach(function(arr){
+      console.log(arr.val);
+      if(arr.val.includes('FabTrol')){
+        pageCall = 'FabTrol';
+      }
+      if(arr.val.includes('Area(in.2)')){
+        console.log('got in hereererer');
+        pageCall = 'EGBD';
+      }
+
+})
+ 
+}
 module.exports = async function parse (buf, reader) {
 
   const data = await readPDFPages(buf, reader);
+  
+  const identify = await identifyPage(data);
+
   const parsedData = await parsePDFData(data); 
   
   const mapTo = await mapToCSV(parsedData);
