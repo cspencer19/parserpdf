@@ -338,11 +338,11 @@ async function parsePDFDataEGBD (pages) {
         pageNumber = parseInt(pageNum[1]);
         console.log(pageNumber);
       }
-     //  console.log(page.x);
+     //  ;
        finalArr.push({'page': pageNumber, 'x': page.x, 'y': page.y, 'val': page.val});
      
    })
-    console.log(finalArr);
+    //console.log(finalArr);
    var groupBy = function(xs, key) {
     return xs.reduce(function(rv, x) {
       (rv[x[key]] = rv[x[key]] || []).push(x);
@@ -353,6 +353,12 @@ async function parsePDFDataEGBD (pages) {
   const groupByPage = groupBy(finalArr, 'page');
   const groupByRow = groupBy(finalArr, 'y');
   //console.log(groupByRow); 
+
+  finalArr.forEach(function(contents){
+    if(contents.page == 1){
+      console.log(contents);
+    }
+  })
 }
 
 async function callCorrectPage(page, data){
