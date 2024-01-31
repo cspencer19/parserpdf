@@ -29,7 +29,7 @@ function readPDFPages (buffer, reader=(new PdfReader())) {
 
 }
 
-async function mapToCSV(parsedData){
+async function mapToCSVZomm(parsedData){
  let jsonData = [];
  const jmath = require('mathjs');
 
@@ -232,7 +232,7 @@ function round (number, decimal_places){
   }
 
 
-async function parsePDFData (pages) {
+async function parsePDFDataZomm (pages) {
 let pageArr = [];
   pages.forEach(function callback(value, index) {
     
@@ -301,7 +301,6 @@ async function identifyPage(data){
     }); 
   });
 
-
   pageArr[0].forEach(function(page){ 
    // console.log(page.x);
     finalArr.push({'x': page.x, 'y': page.y, 'val': page.val});
@@ -314,12 +313,65 @@ async function identifyPage(data){
         pageCall = 'FabTrol';
       }
       if(arr.val.includes('Area(in.2)')){
-        console.log('got in hereererer');
         pageCall = 'EGBD';
       }
 
 })
- 
+ return pageCall;
+}
+
+async function parsePDFDataEGBD (pages) {
+  let pageArr = [];
+  let finalArr = [];
+    pages.forEach(function callback(value, index) {
+      
+      Object.keys(value).forEach(key => {
+        pageArr.push(value[key]);
+      }); 
+  
+    });
+    var pageNumber;
+    pageArr[0].forEach(function(page){
+      
+      if(page.x == 4.084 && page.y == 3.293) {
+        let pageNum = page.val.split('Page: ');
+        pageNumber = parseInt(pageNum[1]);
+        console.log(pageNumber);
+      }
+     //  console.log(page.x);
+       finalArr.push({'page': pageNumber, 'x': page.x, 'y': page.y, 'val': page.val});
+     
+   })
+    console.log(finalArr);
+   var groupBy = function(xs, key) {
+    return xs.reduce(function(rv, x) {
+      (rv[x[key]] = rv[x[key]] || []).push(x);
+      return rv;
+    }, {});
+  };
+
+  const groupByPage = groupBy(finalArr, 'page');
+  const groupByRow = groupBy(finalArr, 'y');
+  //console.log(groupByRow); 
+}
+
+async function callCorrectPage(page, data){
+    //console.log('pzge '+page);
+  
+  if(page == 'FabTrol'){
+      const parsedData = await parsePDFDataZomm(data); 
+      const mapTo = await mapToCSVZomm(parsedData);
+
+      return mapTo; 
+  }
+
+  if(page == 'EGBD'){
+    console.error('got in here');
+    const parsedData = await parsePDFDataEGBD(data)
+
+  }
+
+
 }
 module.exports = async function parse (buf, reader) {
 
@@ -327,10 +379,10 @@ module.exports = async function parse (buf, reader) {
   
   const identify = await identifyPage(data);
 
-  const parsedData = await parsePDFData(data); 
-  
-  const mapTo = await mapToCSV(parsedData);
+  const callC = await callCorrectPage(identify, data);
+
+
   //return data;
-  return mapTo;
+//  return mapTo;
 
 };
